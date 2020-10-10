@@ -11,14 +11,6 @@
         </div>
         <h2>$<%= product.price %></h2>
         <p><%= product.description %></p>
-        <form action="/cart" method="POST">
-            <button class="btn" type="submit">Add to Cart</button>
-            <!-- 
-                extra info that form will send in out "POST" body request
-                type="hidden" because we dont want the user to see it, it's for our logic on the recieving (Server) side
-                req.body.productId == product.id
-            -->
-            <input type="hidden" name="productId" value="<%= product.id %>">
-        </form>
+        <%- include('../includes/add-to-cart.ejs') %>
     </main>
     <%- include('../includes/end.ejs') %>
