@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const Cart = require('./cart');
 
 const p = path.join(
   path.dirname(process.mainModule.filename),
@@ -12,6 +13,7 @@ const getProductsFromFile = cb => {
     if (err) {
       cb([]);
     } else {
+      // @ts-ignore
       cb(JSON.parse(fileContent));
     }
   });
@@ -55,6 +57,24 @@ module.exports = class Product {
     getProductsFromFile(products => {
       const product = products.find(p => p.id === id);
       cb(product);
+    });
+  }
+
+  static deleteById(id, cb) {
+    getProductsFromFile(products => {
+
+      const productToDelete = products.find(p => p.id === id);
+
+      // filter returns new array, that will contain only elements that matches the "if" statment in the anonymous function
+      // so if we want to delete an item, we need to keep all the products which does NOT have id === the id we got as parameter for that function 
+      const updatedProducts = products.filter(p => p.id !== id);
+      fs.writeFile(p, JSON.stringify(updatedProducts), err => {
+        // updated db file wihtout erros ==> we need to update cart as well
+        if (!err) {
+          Cart.deleteProduct(id, productToDelete.price);
+        }
+      });
+
     });
   }
 };
