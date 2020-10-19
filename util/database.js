@@ -1,11 +1,21 @@
-const mysql = require('mysql2');
+// Import a constructor
+const Sequelize = require('sequelize');
+
+// node-complete == db schema name in mysql
+// @ts-ignore
+// automaticly connect + login to db + creating a connection pool
+const sequelize = new Sequelize('node-complete', 'root', 'Aa123456', { dialect: 'mysql', host: 'localhost' });
+
+module.exports = sequelize;
 
 /*
-    Instead of opening a single connection everytime we want to send a query to the DB we can use Pool object 
-    Pool object holds multiple connections active, and each time we query we are "consuming" one of them
-    That way we can query multiple times without waiting time, and query multiple times simultinusly, but it is more resource-heavy methodology
-*/
-// We specifiy details regarding our DB + credentials 
+const mysql = require('mysql2');
+
+//    Instead of opening a single connection everytime we want to send a query to the DB we can use Pool object
+//    Pool object holds multiple connections active, and each time we query we are "consuming" one of them
+//    That way we can query multiple times without waiting time, and query multiple times simultinusly, but it is more resource-heavy methodology
+
+// We specifiy details regarding our DB + credentials
 // node-complete === the name we gave the DB schema
 const pool = mysql.createPool({
     host: 'localhost',
@@ -18,3 +28,4 @@ const pool = mysql.createPool({
 // A promise is a version of callback
 // You can combin it with the "then"/"catch" function to let the program know that it should wait for that execution to end
 module.exports = pool.promise();
+*/
