@@ -7,7 +7,29 @@ exports.getAddProduct = (req, res, next) => {
     editing: false
   });
 };
+exports.postAddProduct = (req, res, next) => {
+  const title = req.body.title;
+  const imageUrl = req.body.imageUrl;
+  const price = req.body.price;
+  const description = req.body.description;
+  // create is method (promise) that sequelize grants us
+  // we pass the json object to it and it automaticly creats the new row in the DB
+  // id is getting created automaticly
+  Product.create({
+    title: title,
+    imageUrl: imageUrl,
+    price: price,
+    description: description
+  })
+    .then(result => {
+      console.log('Product got created');
+    })
+    .catch(err => {
+      console.log(err);
+    });
+};
 
+/* before sequelize 
 exports.postAddProduct = (req, res, next) => {
   const title = req.body.title;
   const imageUrl = req.body.imageUrl;
@@ -19,9 +41,8 @@ exports.postAddProduct = (req, res, next) => {
     .catch(err => {
       console.log(err);
     });
-
 };
-
+*/
 exports.getEditProduct = (req, res, next) => {
   const editMode = req.query.edit;
   if (!editMode) {
