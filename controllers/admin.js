@@ -8,7 +8,8 @@ exports.getAddProduct = (req, res, next) => {
   });
 };
 
-exports.postAddProduct = (req, res, next) => {
+//option 1 - manually adding the userId to the DB:
+/* exports.postAddProduct = (req, res, next) => {
   const title = req.body.title;
   const imageUrl = req.body.imageUrl;
   const price = req.body.price;
@@ -17,6 +18,35 @@ exports.postAddProduct = (req, res, next) => {
   // we pass the json object to it and it automaticly creats the new row in the DB
   // id is getting created automaticly
   Product.create({
+    title: title,
+    imageUrl: imageUrl,
+    price: price,
+    description: description,
+    // we initialized it in app.js when we passed the user in the middleware function
+    userId: req.user.id
+  })
+    .then(result => {
+      console.log('Product got created');
+      res.redirect('/admin/products');
+    })
+    .catch(err => {
+      console.log(err);
+    });
+}; */
+
+
+//option 2
+exports.postAddProduct = (req, res, next) => {
+  const title = req.body.title;
+  const imageUrl = req.body.imageUrl;
+  const price = req.body.price;
+  const description = req.body.description;
+
+
+  // special method made by sequelize when we create associations between objects in DB & Modules in Program
+  // this way - it fills the related columns in the DB with the user's id each time we create a new product which is relate to it
+  // req.user ==> holds the sequlize user we made. we initilzied it in app.js in our middleware function
+  req.user.createProduct({
     title: title,
     imageUrl: imageUrl,
     price: price,
@@ -37,15 +67,18 @@ exports.getEditProduct = (req, res, next) => {
     return res.redirect('/');
   }
   const prodId = req.params.productId;
-  Product.findByPk(prodId)
-    .then(product => {
-      if (!product) {
+
+  // special method made by sequelize when we create associations between objects in DB & Modules in Program
+  // now we can extract products from our db that belongs to that specific user using associations
+  req.user.getProducts({ where: { id: prodId } })
+    .then(products => {
+      if (!products) {
         return res.redirect('/');
       }
       res.render('admin/edit-product', {
         editing: editMode,
         pageTitle: 'Edit Product',
-        product: product,
+        product: products[0],
         path: '/products'
       });
     })
@@ -87,7 +120,7 @@ exports.postEditProduct = (req, res, next) => {
 
 
 exports.getProducts = (req, res, next) => {
-  Product.findAll()
+  req.user.getProducts()
     .then(products => {
       res.render('admin/products', {
         prods: products,
