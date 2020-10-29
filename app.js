@@ -6,6 +6,8 @@ const sequelize = require('./util/database');
 
 const Product = require('./models/product');
 const User = require('./models/user');
+const CartItem = require('./models/cart-item');
+const Cart = require('./models/cart');
 
 const adminRoutes = require('./routes/admin');
 const shopRoutes = require('./routes/shop');
@@ -29,9 +31,12 @@ app.use((req, res, next) => {
         .then(user => {
             // we are adding the req env var for that session a new property with the specific user data
             // @ts-ignore
-            // we are acutally saving the sequlize object, whichmeans that it has all the methods and properties of any other sequelize object that we can use such as create and destroy
+            // we are acutally saving the sequlize object, whichmeans that it has all the methods and properties of any other sequelize object that we can use such as create and destroy, getProduct, getCart (made by association automaticly) etc
             req.user = user;
             next();
+        })
+        .then((cart) => {
+
         })
         .catch(err => console.log(err));
 });
@@ -41,19 +46,36 @@ app.use(shopRoutes);
 app.use(errorController.get404);
 
 
-// creating associations within sequlize before syncing it with the external DB
+
+// ---------------- Sequlize Associations ---------------- 
 // onDelete: 'CASCADE' == if we delete the user, every product which is belongs To it will be deleted as well
+// many-to-one
 Product.belongsTo(User, { constraints: true, onDelete: 'CASCADE' });
 User.hasMany(Product);
 
+// one-to-many
+Cart.belongsTo(User);
+User.hasOne(Cart);
+
+// many-to-many
+// CartItem is going to be the intermidiate table between the other two ==> CartIDs to ProductIDs
+Cart.belongsToMany(Product, { through: CartItem });
+Product.belongsToMany(Cart, { through: CartItem });
+
+// many-to-one
+CartItem.belongsTo(Cart, { constraints: true, onDelete: 'CASCADE' });
+Cart.hasMany(CartItem);
+
+
+
 // looks for sequelized objects in your program and creats a table for each of them based on their definitions + relations between them
 // force: true ==> will change the association everytime the app will run, not recommended in prod environment (it overwrite the current table structure & existing data). we are only using it because we already created the DB tables in previous exercises. We only running it once and then comment it 
+// we are also using the force: true when we add the Cart and CartId models and associations, so the tables needs to be recreated, afterwards we should disable it again
 sequelize
     //.sync({ force: true })
     .sync()
     .then(result => {
         return User.findByPk(1)
-        //console.log(result);
     })
     .then(user => {
         // if i have no user in DB -> create a dummy one
@@ -67,7 +89,11 @@ sequelize
     })
     // here we definitly are getting a user 
     .then(user => {
-        console.log(user);
+        //console.log(user);
+        // we create a "dummy" cart for that user so we'll be able to add products into it etc
+        return user.createCart();
+    })
+    .then((cart) => {
         app.listen(3000);
     })
     .catch(err => {
