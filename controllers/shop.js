@@ -84,12 +84,53 @@ exports.getCart = (req, res, next) => {
     })
 };
 
-exports.postCart = (req, res, next) => {
+exports.postProductToCart = (req, res, next) => {
   const prodId = req.body.productId;
-  Product.findById(prodId, product => {
-    Cart.addProduct(prodId, product.price);
-  });
-  res.redirect('/cart');
+  // we want the cart and the newQuantity objects to be available in the entire then-catch sequence, so we need to declere them in the most upper function
+  let fetchedCart;
+  let newQuantity = 1;
+
+  req.user.getCart()
+    .then(cart => {
+      fetchedCart = cart;
+      return cart.getProducts({ where: { id: prodId } });
+    })
+    // getProducts always return an array, even if it only has 1 element (like in our case, because id is unique)
+    .then(products => {
+      let product;
+      // product does exist in cart - increase its quantity by 1
+      if (products.length > 0) {
+        product = products[0];
+        // sequlize enables us to access data which is in the 'in-between' table, because we used many-to-many association
+        // many-to-many <=> products & cart <=> is mabe by 'in-between' table <=> cartItem (hold quantity for each product we have in our specific cart)
+        const oldQuantity = product.cartItem.quantity;
+        newQuantity = oldQuantity + 1;
+        return product;
+      }
+
+      // product does not exist in cart yet - add it with quantity of 1
+      else {
+        // we dont have the product in our cart so we need to fetch it from the "products" table seperatly using another promise method
+        return Product.findByPk(prodId)
+      }
+    })
+    // handels both cases - from previous "then" function = case #1: we already have the item in cart, case #2: we dont have it in cart
+    // in both cases above we return a product object, and update the cart with the new quantity (either 1 or the previousQty+1)
+    .then(product => {
+      // sequelize associations auto-created function
+      // through ==> sequelize many-to-many assosciation. it tells sequelize to look in 3 tables : Products, Carts, and CartItem (we used that "through" in the app.js as an "in-between" table)
+      // using through we can specificy what additional information to add to that "in-between" table
+      return fetchedCart.addProduct(product, { through: { quantity: newQuantity } });
+    })
+    .catch(err => {
+      console.log(err);
+    })
+    .then(() => {
+      res.redirect('/cart')
+    })
+    .catch(err => {
+      console.log(err);
+    });
 };
 
 exports.postCartDeleteProduct = (req, res, next) => {
@@ -200,3 +241,13 @@ exports.getCart = (req, res, next) => {
     });
   });
 }; */
+
+/* before sequlize
+exports.postProductToCart = (req, res, next) => {
+  const prodId = req.body.productId;
+  Product.findById(prodId, product => {
+    Cart.addProduct(prodId, product.price);
+  });
+  res.redirect('/cart');
+};
+*/
