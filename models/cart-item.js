@@ -1,7 +1,7 @@
 const Sequelize = require('sequelize');
 const sequelize = require('../util/database');
 
-
+// an in-between table that connects between many-carts to many-products
 const CartItem = sequelize.define('cartItem', {
   id: {
     type: Sequelize.INTEGER,

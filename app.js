@@ -8,6 +8,9 @@ const Product = require('./models/product');
 const User = require('./models/user');
 const CartItem = require('./models/cart-item');
 const Cart = require('./models/cart');
+const Order = require('./models/order');
+const OrderItem = require('./models/order-item');
+
 
 const adminRoutes = require('./routes/admin');
 const shopRoutes = require('./routes/shop');
@@ -61,6 +64,15 @@ User.hasOne(Cart);
 // CartItem is going to be the intermidiate table between the other two ==> CartIDs to ProductIDs
 Cart.belongsToMany(Product, { through: CartItem });
 Product.belongsToMany(Cart, { through: CartItem });
+
+
+// many-to-many
+// OrderItem is going to be the intermidiate table between the other two ==> OrderIDs to UserIDs
+Order.belongsTo(User);
+User.hasMany(Order);
+Order.belongsToMany(Product, { through: OrderItem });
+Product.belongsToMany(Order, { through: OrderItem });
+
 
 // many-to-one
 CartItem.belongsTo(Cart, { constraints: true, onDelete: 'CASCADE' });
