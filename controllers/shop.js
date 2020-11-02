@@ -1,6 +1,4 @@
 const Product = require('../models/product');
-const Cart = require('../models/cart');
-
 
 exports.getIndex = (req, res, next) => {
   Product.findAll()
@@ -168,7 +166,36 @@ exports.getCheckout = (req, res, next) => {
   });
 };
 
-
+exports.postOrder = (req, res, next) => {
+  req.user.getCart()
+    .then(cart => {
+      return cart.getProducts();
+    })
+    .then(products => {
+      // create new order for that current products array that we fetched from the current cart
+      return req.user.createOrder()
+        .then(order => {
+          // map == modify the array and returnes a new one after editing each element
+          return order.addProducts(products.map(product => {
+            // add new property to our products
+            // the name must be exactly as the name of the sequlize object we called our in-between table 
+            // const OrderItem = sequlize.define(<THE NAME WE NEED TO COPY FOR THE NEW PROPERTY, EXACTLY THE SAME, INCLUDING UPPER AND LOWER CASE CHARACTERS>)
+            // we are basicly adding the information about the quantity from the cartItem table to the orderItem table object
+            product.orderItem = { quantity: product.cartItem.quantity }
+            return product;
+          }));
+        })
+        .then(result => {
+          res.redirect('/orders');
+        })
+        .catch(err => {
+          console.log(err);
+        });
+    })
+    .catch(err => {
+      console.log(err);
+    });
+};
 
 
 
