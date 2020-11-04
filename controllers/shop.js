@@ -1,4 +1,5 @@
 const Product = require('../models/product');
+const { get } = require('../routes/shop');
 
 exports.getIndex = (req, res, next) => {
   Product.findAll()
@@ -153,22 +154,29 @@ exports.postCartDeleteProduct = (req, res, next) => {
 };
 
 exports.getOrders = (req, res, next) => {
-  res.render('shop/orders', {
-    path: '/orders',
-    pageTitle: 'Your Orders'
-  });
-};
-
-exports.getCheckout = (req, res, next) => {
-  res.render('shop/checkout', {
-    path: '/checkout',
-    pageTitle: 'Checkout'
-  });
+  // ejs cant access the orderItem entries which are specifing the products of each order
+  // we are basicly saying to sequlize based on our associations (Order.belongsToMany(Product ....))
+  // be specifing the "include" when we fetch the order - we are also fetching its related products 
+  // it is being fetched based on the "many-to-many" association <=> each order is getting fetched with its related products, and we have many orders
+  // now we could access in ejs the orders.products inner array for printing the products data for each array inside a forEach loop
+  req.user.getOrders({ include: ['products'] })
+    .then(orders => {
+      res.render('shop/orders', {
+        path: '/orders',
+        pageTitle: 'Your Orders',
+        orders: orders
+      })
+        .catch(err => {
+          console.log(err);
+        });
+    });
 };
 
 exports.postOrder = (req, res, next) => {
+  let fetchedCart;
   req.user.getCart()
     .then(cart => {
+      fetchedCart = cart;
       return cart.getProducts();
     })
     .then(products => {
@@ -184,6 +192,10 @@ exports.postOrder = (req, res, next) => {
             product.orderItem = { quantity: product.cartItem.quantity }
             return product;
           }));
+        })
+        .then(result => {
+          // once the order has been submitted, the cart should drop all of its items 
+          return fetchedCart.setProducts(null);
         })
         .then(result => {
           res.redirect('/orders');
