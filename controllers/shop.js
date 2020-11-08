@@ -134,8 +134,10 @@ exports.postProductToCart = (req, res, next) => {
 
 exports.postCartDeleteProduct = (req, res, next) => {
   const prodId = req.body.productId;
+  let fetchCart;
   req.user.getCart()
     .then(cart => {
+      fetchCart = cart;
       return cart.getProducts({ where: { id: prodId } });
     })
     .then(products => {
@@ -144,6 +146,10 @@ exports.postCartDeleteProduct = (req, res, next) => {
       // removes the product from the in-between table (many-to-many association using sequlize)
       // we dont want to delete the product from the "products" table!!
       product.cartItem.destroy();
+    })
+    .then(result => {
+      // drop all cart's content when it's submitted
+      return fetchCart.setProducts(null);
     })
     .then(result => {
       res.redirect('/cart');
